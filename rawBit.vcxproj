@@ -129,12 +129,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="debug.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="tray.c" />
     <ClCompile Include="win11ui.c" />
+    <ClCompile Include="window.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="debug.h" />
     <ClInclude Include="resources.h" />
+    <ClInclude Include="tray.h" />
     <ClInclude Include="win11ui.h" />
+    <ClInclude Include="window.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="ico\rawBit 16.ico" />

@@ -9,23 +9,7 @@
 #define RAWBIT_TRAY_MESSAGE (WM_USER + 1)
 
 
-typedef struct {
-    int AccentState;
-    int Flags;
-    int Color;
-    int AnimationId;
-} ACCENT_POLICY;
 
-typedef struct {
-    int Attribute;
-    void* Data;
-    SIZE_T Size;
-} WINDOWCOMPOSITIONATTRIBDATA;
-
-enum { WCA_ACCENT_POLICY = 19 };
-enum { ACCENT_ENABLE_BLURBEHIND = 3 };
-
-typedef BOOL(WINAPI* SetWindowCompositionAttributeFn)(HWND, WINDOWCOMPOSITIONATTRIBDATA*);
 
 void win11ui_apply_rounded_corners(HWND window_handle)
 {
@@ -67,30 +51,3 @@ void win11ui_enable_dark_mode(void)
 }
 
 
-void tray_icon_add(HWND window_handle, HINSTANCE hInstance)
-{
-    NOTIFYICONDATAA nid = { 0 };
-    nid.cbSize = sizeof(nid);
-    nid.hWnd = window_handle;
-    nid.uID = RAWBIT_TRAY_ICON_ID;
-    nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
-    nid.uCallbackMessage = RAWBIT_TRAY_MESSAGE;
-
-    HICON icon_tray = LoadIconA(hInstance, MAKEINTRESOURCEA(IDI_ICON_TRAY));
-    nid.hIcon = icon_tray;
-
-    lstrcpyA(nid.szTip, "rawBit");
-
-    Shell_NotifyIconA(NIM_ADD, &nid);
-}
-
-
-void tray_icon_remove(HWND window_handle)
-{
-    NOTIFYICONDATAA nid = { 0 };
-    nid.cbSize = sizeof(nid);
-    nid.hWnd = window_handle;
-    nid.uID = RAWBIT_TRAY_ICON_ID;
-
-    Shell_NotifyIconA(NIM_DELETE, &nid);
-}
