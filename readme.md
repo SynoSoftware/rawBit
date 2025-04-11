@@ -57,3 +57,27 @@ TBD
 rawBit is experimental and under heavy development.  
 Expect rapid changes.
 
+---
+
+Project: rawBit  
+Goal: Minimal Windows 11 BitTorrent client in pure C.  
+Style: Native Win32 API, single .exe, small size, clean code, no dependencies.  
+Status: GUI shell ready, windowing logic done, starting torrent.c for .torrent parser.
+Language: C (no C++)  
+Build: Visual Studio 2022  
+Target: Windows 11 only  
+Philosophy: 90s software design — fast, small, efficient.
+"Write torrent.c — minimal .torrent (bencode) parser."
+
+
+---
+
+Project: rawBit  
+Goal: Minimal Windows 11 BitTorrent client written in pure C.  
+Target: Windows 11 only.  
+Style: Native Win32 API, single .exe, small size, fast, clean code, no dependencies.  
+Build: Visual Studio 2022  
+Current status: GUI shell working, tray icon, resizing, clean window handling.  
+Next: Start torrent.c — minimal .torrent (bencode) parser, pure C, zero malloc abuse.  
+Philosophy: 90s-style software — fast, small, efficient, understandable.
+
