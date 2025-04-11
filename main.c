@@ -191,43 +191,57 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			pt.x = GET_X_LPARAM(lparam);
 			pt.y = GET_Y_LPARAM(lparam);
 
-			// Convert the point from screen coordinates to client coordinates
-			ScreenToClient(hwnd, &pt);
+			ScreenToClient(hwnd, &pt);  // Works fine for hit test
 
 			RECT rect;
 			GetClientRect(hwnd, &rect);
 
-			int borderThickness = 8; // Define the thickness for the resize border
+			int border = 8;
 
-			// Check for the left border (resize)
-			if(pt.x < rect.left + borderThickness)
+			// Top-Left Corner
+			if(pt.x < rect.left + border && pt.y < rect.top + border)
 			{
-				DebugOut("Mouse is over left border (resize)\n");
+				DebugOut("Mouse is over top-left corner (resize)\n");
+				return HTTOPLEFT;
+			}
+
+			// Top-Right Corner
+			if(pt.x > rect.right - border && pt.y < rect.top + border)
+			{
+				DebugOut("Mouse is over top-right corner (resize)\n");
+				return HTTOPRIGHT;
+			}
+
+			// Bottom-Left Corner
+			if(pt.x < rect.left + border && pt.y > rect.bottom - border)
+			{
+				DebugOut("Mouse is over bottom-left corner (resize)\n");
+				return HTBOTTOMLEFT;
+			}
+
+			// Bottom-Right Corner
+			if(pt.x > rect.right - border && pt.y > rect.bottom - border)
+			{
+				DebugOut("Mouse is over bottom-right corner (resize)\n");
+				return HTBOTTOMRIGHT;
+			}
+
+			// Edges
+			if(pt.x < rect.left + border)
 				return HTLEFT;
-			}
-			// Check for the right border (resize)
-			if(pt.x > rect.right - borderThickness)
-			{
-				DebugOut("Mouse is over right border (resize)\n");
+
+			if(pt.x > rect.right - border)
 				return HTRIGHT;
-			}
-			// Check for the top border (resize)
-			if(pt.y < rect.top + borderThickness)
-			{
-				DebugOut("Mouse is over top border (resize)\n");
+
+			if(pt.y < rect.top + border)
 				return HTTOP;
-			}
-			// Check for the bottom border (resize)
-			if(pt.y > rect.bottom - borderThickness)
-			{
-				DebugOut("Mouse is over bottom border (resize)\n");
+
+			if(pt.y > rect.bottom - border)
 				return HTBOTTOM;
-			}
 
 			DebugOut("Mouse is inside the client area (no resize)\n");
 			return HTCLIENT;
 		}
-
 
 		// WM_SIZING — Handle both horizontal and vertical resizing
 		case WM_SIZING:
