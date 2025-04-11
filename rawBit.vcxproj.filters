@@ -27,4 +27,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="ico\rawBit 16.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="ico\rawBit 32.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="ico\rawBit 256.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

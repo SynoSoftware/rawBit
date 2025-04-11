@@ -66,7 +66,9 @@ void tray_icon_add(HWND window_handle)
     nid.uID = RAWBIT_TRAY_ICON_ID;
     nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid.uCallbackMessage = RAWBIT_TRAY_MESSAGE;
-    nid.hIcon = LoadIconA(NULL, IDI_APPLICATION); // Placeholder icon
+    HICON icon_tray = LoadImageA(NULL, "ico/rawBit 16.ico", IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+    nid.hIcon = icon_tray;
+
     lstrcpyA(nid.szTip, "rawBit");
 
     Shell_NotifyIconA(NIM_ADD, &nid);
