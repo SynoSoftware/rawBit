@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include "win11ui.h"
+#include "resources.h"
 #include <windowsx.h> // This is the key header for macros like GET_X_LPARAM and GET_Y_LPARAM
 
 LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
@@ -28,8 +29,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	
 	// Load Icons from separate .ico files
 	
-	HICON icon_small = LoadImageA(NULL, "ico/rawBit 32.ico", IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
-	HICON icon_large = LoadImageA(NULL, "ico/rawBit 256.ico", IMAGE_ICON, 256, 256, LR_LOADFROMFILE);
+	HICON icon_small = LoadIconA(hInstance, MAKEINTRESOURCEA(IDI_ICON_SMALL));
+	HICON icon_large = LoadIconA(hInstance, MAKEINTRESOURCEA(IDI_ICON_LARGE));
 	if(!icon_small)
 	{
 		MessageBoxA(NULL, "Failed to load small icon", "Error", MB_OK | MB_ICONERROR);
@@ -73,7 +74,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 	ShowWindow(hwnd, nCmdShow);
-	tray_icon_add(hwnd);
+	tray_icon_add(hwnd, hInstance);
+
 
 
 

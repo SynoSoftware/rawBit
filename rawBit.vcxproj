@@ -133,12 +133,16 @@
     <ClCompile Include="win11ui.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="resources.h" />
     <ClInclude Include="win11ui.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="ico\rawBit 16.ico" />
     <Image Include="ico\rawBit 256.ico" />
     <Image Include="ico\rawBit 32.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="rawbit.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

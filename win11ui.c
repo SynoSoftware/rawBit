@@ -1,7 +1,7 @@
 #include "win11ui.h"
 #include <dwmapi.h>  
 #include <shellapi.h>
-
+#include "resources.h"
 
 #pragma comment(lib, "Dwmapi.lib")
 
@@ -36,29 +36,38 @@ void win11ui_apply_rounded_corners(HWND window_handle)
 void win11ui_apply_blur(HWND window_handle)
 {
     HMODULE hUser32 = LoadLibraryA("user32.dll");
+    if(!hUser32) return;
+
     SetWindowCompositionAttributeFn fnSetAttr =
         (SetWindowCompositionAttributeFn)GetProcAddress(hUser32, "SetWindowCompositionAttribute");
 
-    if (fnSetAttr)
+    if(fnSetAttr)
     {
         ACCENT_POLICY policy = { ACCENT_ENABLE_BLURBEHIND, 0, 0, 0 };
         WINDOWCOMPOSITIONATTRIBDATA data = { WCA_ACCENT_POLICY, &policy, sizeof(policy) };
         fnSetAttr(window_handle, &data);
     }
+
+    FreeLibrary(hUser32);
 }
+
 
 void win11ui_enable_dark_mode(void)
 {
     HMODULE hUxtheme = LoadLibraryA("uxtheme.dll");
+    if(!hUxtheme) return;
+
     typedef BOOL(WINAPI* AllowDarkFn)(BOOL);
     AllowDarkFn fnAllowDark = (AllowDarkFn)GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135));
 
-    if (fnAllowDark)
+    if(fnAllowDark)
         fnAllowDark(TRUE);
+
+    FreeLibrary(hUxtheme);
 }
 
 
-void tray_icon_add(HWND window_handle)
+void tray_icon_add(HWND window_handle, HINSTANCE hInstance)
 {
     NOTIFYICONDATAA nid = { 0 };
     nid.cbSize = sizeof(nid);
@@ -66,13 +75,15 @@ void tray_icon_add(HWND window_handle)
     nid.uID = RAWBIT_TRAY_ICON_ID;
     nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid.uCallbackMessage = RAWBIT_TRAY_MESSAGE;
-    HICON icon_tray = LoadImageA(NULL, "ico/rawBit 16.ico", IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+
+    HICON icon_tray = LoadIconA(hInstance, MAKEINTRESOURCEA(IDI_ICON_TRAY));
     nid.hIcon = icon_tray;
 
     lstrcpyA(nid.szTip, "rawBit");
 
     Shell_NotifyIconA(NIM_ADD, &nid);
 }
+
 
 void tray_icon_remove(HWND window_handle)
 {
