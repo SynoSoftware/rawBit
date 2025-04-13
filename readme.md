@@ -1,4 +1,4 @@
-﻿# rawBit
+# rawBit
 
 A minimal, native Windows BitTorrent client written in pure C.
 
@@ -12,10 +12,23 @@ Built for small size, speed, and simplicity — like software used to be.
 - No external dependencies.
 - Single `.exe` file.
 - Native Win32 API.
-- Custom minimal `.torrent` parser.
+- Custom minimal `.torrent` (bencode) parser.
 - Lightweight UI with Windows 11 styling.
 - Tray icon support.
 - Resizable borderless window.
+- Clean UI with instant search/filter.
+- Safe multi-threaded architecture.
+
+---
+
+## Design Philosophy
+
+- Stay small.
+- Stay efficient.
+- Stay pure C.
+- No cross-platform overhead.
+- Native Windows experience.
+- 90s software design mindset — fast, simple, understandable.
 
 ---
 
@@ -24,60 +37,63 @@ Built for small size, speed, and simplicity — like software used to be.
 ### Prerequisites:
 
 - Visual Studio 2022 or newer.
-- Windows SDK (latest).
+- Latest Windows 11 SDK.
 
 ### Build:
 
-1. Clone the repository.
+1. Clone this repository.
 2. Open `rawBit.sln` in Visual Studio.
 3. Build → Release x64.
 
-That's it — a single `.exe` will be generated.
+Result: a single `.exe` in `Release\`.
 
 ---
 
-## Goals
+## Project Status
 
-- Stay small.
-- Stay efficient.
-- Stay pure C.
-- No cross-platform overhead.
-- Native Windows experience.
+rawBit is under active development.  
+
+### Current Progress:
+- GUI shell ready.
+- Window layout done.
+- Tray icon.
+- Window resizing.
+- Clean window handling.
+
+### Next:
+- `torrent.c` — write minimal `.torrent` (bencode) parser.
+- Build search index.
+- Start Torrent Engine thread.
+
+---
+
+## Documentation
+
+- [docs/PLAN.md](docs/PLAN.md) — Full development milestones.
+- [docs/DESIGN.md](docs/DESIGN.md) — Architecture and design notes.
 
 ---
 
 ## License
 
-TBD
+TBD.
 
 ---
 
 ## Notes
 
-rawBit is experimental and under heavy development.  
-Expect rapid changes.
+rawBit is experimental.  
+Work in progress.  
+Expect changes.
 
 ---
 
 Project: rawBit  
 Goal: Minimal Windows 11 BitTorrent client in pure C.  
-Style: Native Win32 API, single .exe, small size, clean code, no dependencies.  
-Status: GUI shell ready, windowing logic done, starting torrent.c for .torrent parser.
+Target: Windows 11 only.  
 Language: C (no C++)  
 Build: Visual Studio 2022  
-Target: Windows 11 only  
-Philosophy: 90s software design — fast, small, efficient.
-"Write torrent.c — minimal .torrent (bencode) parser."
-
+Style: Native Win32 API, small `.exe`, fast, clean code, no dependencies.  
+Philosophy: Software should be fast, small, and efficient.
 
 ---
-
-Project: rawBit  
-Goal: Minimal Windows 11 BitTorrent client written in pure C.  
-Target: Windows 11 only.  
-Style: Native Win32 API, single .exe, small size, fast, clean code, no dependencies.  
-Build: Visual Studio 2022  
-Current status: GUI shell working, tray icon, resizing, clean window handling.  
-Next: Start torrent.c — minimal .torrent (bencode) parser, pure C, zero malloc abuse.  
-Philosophy: 90s-style software — fast, small, efficient, understandable.
-
