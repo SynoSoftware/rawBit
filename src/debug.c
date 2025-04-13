@@ -31,40 +31,42 @@ void CleanupDebugOutput()
 
 // Ensure you call InitializeDebugOutput() early in your app (e.g., WinMain start)
 // and CleanupDebugOutput() before exiting.
-
 void DebugOut(const char* format, ...)
 {
+    // If the critical section wasn't initialized, output a warning and the message directly (unsafe)
     if(!csInitialized)
     {
-        // Optionally attempt initialization here, or just bail/assert
-        // For simplicity, we'll just output directly without lock if not initialized
-        // but this isn't thread-safe.
         char message_unsafe[1024];
         va_list args_unsafe;
         va_start(args_unsafe, format);
-        vsnprintf(message_unsafe, sizeof(message_unsafe) - 1, format, args_unsafe);
-        message_unsafe[sizeof(message_unsafe) - 1] = '\0'; // Ensure null termination
+        vsnprintf_s(message_unsafe, sizeof(message_unsafe), _TRUNCATE, format, args_unsafe); // Use safer vsnprintf_s
         va_end(args_unsafe);
         OutputDebugStringA("DEBUG_LOCK_UNINITIALIZED: ");
         OutputDebugStringA(message_unsafe);
+        OutputDebugStringA("\n"); // Add newline for clarity
         return;
     }
 
-    char message[1024]; // Use a larger buffer
+    char message[1024]; // Buffer for the current message
     va_list args;
     va_start(args, format);
-    // Use vsnprintf for safety
-    vsnprintf(message, sizeof(message) - 1, format, args);
-    message[sizeof(message) - 1] = '\0'; // Ensure null termination
+    vsnprintf_s(message, sizeof(message), _TRUNCATE, format, args); // Create the message string safely
     va_end(args);
 
-    EnterCriticalSection(&debugCritSec);
-    // Optional: uncomment the strcmp if you want to suppress duplicate messages
-    // if(strcmp(message, lastMessage) != 0)
-    // {
-    OutputDebugStringA(message);
-    // Be careful with strcpy_s buffer sizes if you re-enable lastMessage tracking
-    // strcpy_s(lastMessage, sizeof(lastMessage), message);
-// }
-    LeaveCriticalSection(&debugCritSec);
+    EnterCriticalSection(&debugCritSec); // Lock for thread safety
+
+    // --- ADDED/RESTORED Duplicate Check ---
+    if(strcmp(message, lastMessage) != 0)
+    {
+        // Only output if the message is DIFFERENT from the last one
+        OutputDebugStringA(message);
+        OutputDebugStringA("\n"); // Add newline after message
+
+        // Update the last message tracker
+        // strcpy_s is safer than strcpy
+        strcpy_s(lastMessage, sizeof(lastMessage), message);
+    }
+    // --- End Duplicate Check ---
+
+    LeaveCriticalSection(&debugCritSec); // Unlock
 }

@@ -90,19 +90,28 @@
     <None Include="readme.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\aboutpage.c" />
     <ClCompile Include="src\debug.c" />
     <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\pagemanager.c" />
+    <ClCompile Include="src\settingspage.c" />
     <ClCompile Include="src\torrent.c" />
+    <ClCompile Include="src\torrentlistpage.c" />
     <ClCompile Include="src\torrent_parse.c" />
     <ClCompile Include="src\tray.c" />
     <ClCompile Include="src\win11ui.c" />
     <ClCompile Include="src\window.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\aboutpage.h" />
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\debug.h" />
+    <ClInclude Include="src\page.h" />
+    <ClInclude Include="src\pagemanager.h" />
     <ClInclude Include="src\resources.h" />
+    <ClInclude Include="src\settingspage.h" />
     <ClInclude Include="src\torrent.h" />
+    <ClInclude Include="src\torrentlistpage.h" />
     <ClInclude Include="src\torrent_parse.h" />
     <ClInclude Include="src\tray.h" />
     <ClInclude Include="src\win11ui.h" />
