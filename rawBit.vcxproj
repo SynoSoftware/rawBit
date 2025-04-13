@@ -53,6 +53,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -91,6 +92,8 @@
   <ItemGroup>
     <ClCompile Include="src\debug.c" />
     <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\torrent.c" />
+    <ClCompile Include="src\torrent_parse.c" />
     <ClCompile Include="src\tray.c" />
     <ClCompile Include="src\win11ui.c" />
     <ClCompile Include="src\window.c" />
@@ -99,6 +102,8 @@
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\debug.h" />
     <ClInclude Include="src\resources.h" />
+    <ClInclude Include="src\torrent.h" />
+    <ClInclude Include="src\torrent_parse.h" />
     <ClInclude Include="src\tray.h" />
     <ClInclude Include="src\win11ui.h" />
     <ClInclude Include="src\window.h" />
