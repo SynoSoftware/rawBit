@@ -15,13 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="ico\rawBit 16.ico">
+    <Image Include="ico\rawBit_16.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="ico\rawBit 32.ico">
+    <Image Include="ico\rawBit_32.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="ico\rawBit 256.ico">
+    <Image Include="ico\rawBit256.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

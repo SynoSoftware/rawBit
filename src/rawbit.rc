@@ -1,5 +1,0 @@
-#include "resources.h"
-
-IDI_ICON_TRAY  ICON "ico/rawBit_16.ico"
-IDI_ICON_SMALL ICON "ico/rawBit_32.ico"
-IDI_ICON_LARGE ICON "ico/rawBit256.ico"
