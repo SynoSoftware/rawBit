@@ -15,8 +15,8 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	switch(msg)
 	{
 		case WM_DESTROY:
-		tray_icon_remove(hwnd);
-		PostQuitMessage(0);
+			tray_icon_remove(hwnd);
+			PostQuitMessage(0);
 		return 0;
 
 		case WM_SIZE:
@@ -65,7 +65,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		{
 			if(wparam == VK_ESCAPE)
 			{
-				PostMessageA(hwnd, WM_CLOSE, 0, 0);
+				PostMessage(hwnd, WM_CLOSE, 0, 0);
 			}
 			return 0;
 		}
@@ -222,7 +222,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			{
 				//DebugOut("Inside content area: initiating window move\n");
 				ReleaseCapture();
-				SendMessageA(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+				SendMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
 			}
 			else
 			{
@@ -234,5 +234,5 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 	}
 
-	return DefWindowProcA(hwnd, msg, wparam, lparam);
+	return DefWindowProcW(hwnd, msg, wparam, lparam);
 }

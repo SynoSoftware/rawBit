@@ -129,20 +129,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="debug.c" />
-    <ClCompile Include="main.c" />
-    <ClCompile Include="tray.c" />
-    <ClCompile Include="win11ui.c" />
-    <ClCompile Include="window.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="debug.h" />
-    <ClInclude Include="resources.h" />
-    <ClInclude Include="tray.h" />
-    <ClInclude Include="win11ui.h" />
-    <ClInclude Include="window.h" />
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="ico\rawBit 16.ico" />
     <Image Include="ico\rawBit 256.ico" />
     <Image Include="ico\rawBit 32.ico" />
@@ -152,6 +138,21 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="readme.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\debug.c" />
+    <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\tray.c" />
+    <ClCompile Include="src\win11ui.c" />
+    <ClCompile Include="src\window.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\config.h" />
+    <ClInclude Include="src\debug.h" />
+    <ClInclude Include="src\resources.h" />
+    <ClInclude Include="src\tray.h" />
+    <ClInclude Include="src\win11ui.h" />
+    <ClInclude Include="src\window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
