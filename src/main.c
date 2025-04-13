@@ -98,73 +98,92 @@ int WINAPI WinMain(
     if(!t_ptr)
     {
         MessageBoxW(NULL, L"Failed to allocate memory for Torrent struct", L"Error", MB_OK | MB_ICONERROR);
-        DestroyWindow(hwnd); // Clean up window before exiting
+        DestroyWindow(hwnd);
+        // *** NOTE: 'CleanupDebugOutput' MUST be defined in debug.c and linked ***
         CleanupDebugOutput();
-        return 1; // Exit if allocation fails
+        return 1;
     }
-    // It's good practice to initialize memory after malloc, although torrent_load does memset
-    // memset(t_ptr, 0, sizeof(Torrent));
 
     // --- Load the torrent data ---
-    // Use a real path or process lpCmdLine if you intend to load via command line
+    // *** NOTE: 'torrent_load' function MUST be defined in torrent.c and linked ***
+    // *** NOTE: 'torrent_load' CALLS functions that MUST be defined in torrent_parse.c ***
     int load_result = torrent_load("example.torrent", t_ptr);
 
     if(load_result == 0)
     {
-        // Successfully loaded, print debug info
+        // *** NOTE: 'DebugOut' MUST be defined in debug.c and linked ***
         DebugOut("Torrent loaded successfully in WinMain:\n");
         DebugOut("  Name: %s\n", t_ptr->name);
-        DebugOut("  Announce: %s\n", t_ptr->announce);
-        DebugOut("  Piece Length: %d\n", t_ptr->piece_length);
-        DebugOut("  Piece Count: %d\n", t_ptr->piece_count);
-        DebugOut("  Total Size: %lld\n", t_ptr->total_size);
-        DebugOut("  File Count: %d\n", t_ptr->file_count);
-        if(t_ptr->file_count > 0 && t_ptr->files[0].path_depth > 0) // Check path_depth too
+        // --- Print Info Hash ---
+        char info_hash_hex[41];
+        for(int i = 0; i < 20; ++i) sprintf_s(info_hash_hex + i * 2, 3, "%02x", t_ptr->info_hash[i]);
+        DebugOut("  Info Hash: %s\n", info_hash_hex);
+        // --- Print Trackers ---
+        DebugOut("  Announce: %s\n", t_ptr->announce[0] ? t_ptr->announce : "(not set)");
+        DebugOut("  Announce List Tiers: %d\n", t_ptr->announce_tier_count);
+        for(int i = 0; i < t_ptr->announce_tier_count; ++i)
         {
-            DebugOut("  First File Path[0]: %s\n", t_ptr->files[0].path[0]);
-            DebugOut("  First File Length: %lld\n", t_ptr->files[0].length);
+            DebugOut("    Tier %d:\n", i + 1);
+            for(int j = 0; j < t_ptr->announce_list[i].url_count; ++j)
+            {
+                DebugOut("      - %s\n", t_ptr->announce_list[i].urls[j]);
+            }
         }
-        // Application logic would use t_ptr here
+        // --- Print Piece Info ---
+        DebugOut("  Piece Length: %d\n", t_ptr->piece_length);
+        // >>> THE FIX IS HERE <<<
+        DebugOut("  Piece Count: %d\n", t_ptr->piece_count); // Was 't->', now 't_ptr->'
+        // >>>--------------- <<<
+        DebugOut("  Total Size: %lld bytes\n", t_ptr->total_size);
+
+        // --- Print ALL Files ---
+        DebugOut("  File Count: %d\n", t_ptr->file_count);
+        DebugOut("  Files:\n");
+        for(int i = 0; i < t_ptr->file_count; ++i)
+        {
+            TorrentFile* f = &t_ptr->files[i];
+            DebugOut("    [%d] Length: %lld bytes\n", i, f->length);
+            char full_path_buffer[1024] = { 0 };
+            for(int j = 0; j < f->path_depth; ++j)
+            {
+                // strcat_s is safer than strcat
+                strcat_s(full_path_buffer, sizeof(full_path_buffer), f->path[j]);
+                if(j < f->path_depth - 1)
+                {
+                    strcat_s(full_path_buffer, sizeof(full_path_buffer), "\\");
+                }
+            }
+            DebugOut("        Path: %s\n", full_path_buffer);
+        }
     }
-    else
+    else // load_result != 0
     {
-        // Failed to load, show error message
         MessageBoxW(NULL, L"Failed to load or parse torrent file. Check Debug Output.", L"Error", MB_OK | MB_ICONERROR);
-        // Application logic might decide to continue running the UI or exit here
     }
 
     // --- Main Message Loop ---
-    MSG msg;
-    // Standard message loop: GetMessage returns > 0 for messages, 0 for WM_QUIT, -1 for error
-    while(GetMessageW(&msg, NULL, 0, 0) > 0)
+    MSG msg = { 0 }; // Good practice to initialize msg
+    while(GetMessageW(&msg, NULL, 0, 0) > 0) // Use > 0 check
     {
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }
-    // When loop terminates, msg.wParam usually contains the exit code from PostQuitMessage
-    int loop_result = (int)msg.wParam;
-
+    int loop_result = (int)msg.wParam; // Get exit code
 
     // --- Cleanup ---
-    // Free torrent data (if allocated and loaded successfully)
     if(t_ptr)
     {
-        if(load_result == 0) // Only free internal data if loading was successful
+        if(load_result == 0)
         {
+            // *** NOTE: 'torrent_free' function MUST be defined in torrent.c and linked ***
             torrent_free(t_ptr); // Frees t_ptr->pieces
         }
-        // Always free the Torrent struct itself if allocation succeeded
-        free(t_ptr);
+        free(t_ptr); // Free the Torrent struct itself
         t_ptr = NULL;
     }
 
-    // Other cleanup (e.g., remove tray icon?)
-    // tray_icon_remove(hwnd, ...); // If you have such a function
+    // *** NOTE: 'CleanupDebugOutput' MUST be defined in debug.c and linked ***
+    CleanupDebugOutput();
 
-    // DestroyWindow(hwnd); // Usually implicitly destroyed when closed by user leading to WM_DESTROY -> PostQuitMessage
-    // UnregisterClassW(L"rawbit_window_class", hInstance); // Optional: unregister class before exit
-
-    CleanupDebugOutput(); // Cleanup debug locking
-
-    return loop_result; // Return the exit code
+    return loop_result;
 }

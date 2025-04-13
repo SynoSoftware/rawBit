@@ -1,33 +1,63 @@
-#pragma once // Use header guards
+#pragma once
 #include <stdint.h>
-#include <stddef.h> // For size_t
+#include <stddef.h>
 
-#define MAX_FILES_PER_TORRENT 256 // Increased slightly, but still a potential limit
-#define MAX_PATH_COMPONENTS    16 // Increased slightly
-#define MAX_FILENAME_LEN      256 // Increased path component length
+#define MAX_FILES_PER_TORRENT 256
+#define MAX_PATH_COMPONENTS    16
+#define MAX_FILENAME_LEN      256
+#define MAX_ANNOUNCE_URL_LEN  512
+#define MAX_ANNOUNCE_TIERS    10    // Max tracker tiers in announce-list
+#define MAX_TRACKERS_PER_TIER 10    // Max trackers per tier
 
 typedef struct TorrentFile
 {
+    // ... (same as before)
     long long length;
-    char path[MAX_PATH_COMPONENTS][MAX_FILENAME_LEN]; // Increased component length
+    char path[MAX_PATH_COMPONENTS][MAX_FILENAME_LEN];
     int path_depth;
 } TorrentFile;
 
+// Structure to hold tiered announce URLs
+typedef struct AnnounceTier
+{
+    char urls[MAX_TRACKERS_PER_TIER][MAX_ANNOUNCE_URL_LEN];
+    int url_count;
+} AnnounceTier;
+
 typedef struct Torrent
 {
-    char name[MAX_FILENAME_LEN];                // Consistent sizing with path components
-    char announce[512];                         // Increased size for potentially long announce URLs
-    int piece_length;
-    unsigned char* pieces;                      // Dynamically allocated buffer for piece hashes
-    int piece_count;
+    // --- Core Info ---
+    char name[MAX_FILENAME_LEN];
+    unsigned char info_hash[20];      // <<< ADDED: SHA-1 hash of the bencoded info dict
     long long total_size;
-    int file_count;
-    TorrentFile files[MAX_FILES_PER_TORRENT];   // Still fixed, but increased limit. Dynamic might be better for extreme cases.
+    int piece_length;
+    unsigned char* pieces;            // Dynamic buffer for piece hashes (SHA-1 sums)
+    int piece_count;
+
+    // --- File Structure ---
+    int file_count;                   // 0 for single file before processing, 1 after; >1 for multi
+    TorrentFile files[MAX_FILES_PER_TORRENT]; // Array for file details
+
+    // --- Tracker Info ---
+    char announce[MAX_ANNOUNCE_URL_LEN]; // Primary announce URL (optional if announce-list exists)
+    AnnounceTier announce_list[MAX_ANNOUNCE_TIERS]; // <<< ADDED: Tiered list support
+    int announce_tier_count;          // <<< ADDED: Number of tiers in announce_list
+
+    // --- Optional Info (Add as needed) ---
+    // char comment[512];
+    // char created_by[128];
+    // long long creation_date; // Unix timestamp
+    // char encoding[32];
+
 } Torrent;
 
-// Function to load torrent data from a file
-// Returns 0 on success, negative value on error.
+// Load torrent data *and calculate info_hash*
 int torrent_load(const char* path, Torrent* t);
 
-// Function to free memory allocated within the Torrent struct (specifically t->pieces)
-void torrent_free(Torrent* t);
+void torrent_free(Torrent* t); // (Definition should already exist in torrent.c)
+
+// --- Hashing ---
+// You need to implement or link this function externally.
+// It takes a pointer to the data and its length, and fills the 20-byte hash buffer.
+// Returns 0 on success, -1 on error.
+int calculate_sha1(const unsigned char* data, size_t data_len, unsigned char hash_out[20]);
