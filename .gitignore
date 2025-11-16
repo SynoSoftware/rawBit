@@ -365,8 +365,6 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # Third-party build outputs
-external/libtorrent-build/
+external/
 
-libtorrent/
-boost/
 
