@@ -33,8 +33,51 @@ namespace
 #ifndef DWMSBT_MAINWINDOW
 #define DWMSBT_MAINWINDOW 2
 #endif
+#ifndef DWMWA_WINDOW_CORNER_PREFERENCE
+#define DWMWA_WINDOW_CORNER_PREFERENCE 33
+#endif
+#ifndef DWMWCP_ROUND
+#define DWMWCP_ROUND 2
+#endif
+
+#ifndef WCA_ACCENT_POLICY
+#define WCA_ACCENT_POLICY 19
+#endif
+#ifndef ACCENT_ENABLE_HOSTBACKDROP
+#define ACCENT_ENABLE_HOSTBACKDROP 5
+#endif
+#ifndef ACCENT_ENABLE_ACRYLICBLURBEHIND
+#define ACCENT_ENABLE_ACRYLICBLURBEHIND 4
+#endif
+
+struct AccentPolicy
+{
+    int state;
+    int flags;
+    unsigned int gradient_color;
+    int animation_id;
+};
+
+struct WindowCompositionAttribData
+{
+    int attribute;
+    void* data;
+    SIZE_T size;
+};
+
+typedef BOOL(WINAPI* SetWindowCompositionAttributeFn)(HWND, WindowCompositionAttribData*);
 
     LRESULT CALLBACK launcher_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+
+    // Add this function near the top with apply_mica
+    void disable_mica(HWND hwnd)
+    {
+        const DWORD backdrop = 1; // DWMSBT_NONE
+        DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(backdrop));
+
+        const MARGINS margins = { 0, 0, 0, 0 };
+        DwmExtendFrameIntoClientArea(hwnd, &margins);
+    }
 
     void apply_mica(HWND hwnd)
     {
@@ -49,11 +92,73 @@ namespace
         const DWORD backdrop = DWMSBT_MAINWINDOW;
         DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(backdrop));
 
+        const DWORD corner_pref = DWMWCP_ROUND;
+        DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
+
         BOOL enable_mica = TRUE;
         DwmSetWindowAttribute(hwnd, DWMWA_MICA_EFFECT, &enable_mica, sizeof(enable_mica));
 
-        const MARGINS margins = {-1, -1, -1, -1};
+        const MARGINS margins = { -1, -1, -1, -1 };
+
         DwmExtendFrameIntoClientArea(hwnd, &margins);
+
+        BOOL trueValue = TRUE;
+        DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &trueValue, sizeof(trueValue));
+
+    
+     
+    }
+
+    void draw_open_button(const LauncherWindow* launcher, DRAWITEMSTRUCT* draw)
+    {
+        if(!launcher || !draw)
+        {
+            return;
+        }
+
+        HDC dc = draw->hDC;
+        RECT rc = draw->rcItem;
+
+        const bool pressed = (draw->itemState & ODS_SELECTED) != 0;
+        const bool focused = (draw->itemState & ODS_FOCUS) != 0;
+
+        const COLORREF bg_normal = RGB(22, 22, 26);
+        const COLORREF bg_hover = RGB(32, 32, 36);
+        const COLORREF bg_pressed = RGB(18, 18, 22);
+        const COLORREF border_color = RGB(64, 64, 72);
+
+        COLORREF fill_color = bg_normal;
+        if(pressed)
+        {
+            fill_color = bg_pressed;
+        }
+        else if(draw->itemState & ODS_HOTLIGHT)
+        {
+            fill_color = bg_hover;
+        }
+
+        HBRUSH fill_brush = CreateSolidBrush(fill_color);
+        HPEN border_pen = CreatePen(PS_SOLID, 1, border_color);
+        HBRUSH old_brush = static_cast<HBRUSH>(SelectObject(dc, fill_brush));
+        HPEN old_pen = static_cast<HPEN>(SelectObject(dc, border_pen));
+        RoundRect(dc, rc.left, rc.top, rc.right, rc.bottom, 12, 12);
+        SelectObject(dc, old_brush);
+        SelectObject(dc, old_pen);
+        DeleteObject(fill_brush);
+        DeleteObject(border_pen);
+
+        SetBkMode(dc, TRANSPARENT);
+        SetTextColor(dc, RGB(240, 240, 240));
+
+        const wchar_t* text = L"Open rawBit interface";
+        DrawTextW(dc, text, -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+        if(focused)
+        {
+            RECT focus_rc = rc;
+            InflateRect(&focus_rc, -6, -6);
+            DrawFocusRect(dc, &focus_rc);
+        }
     }
 
     void layout_controls(LauncherWindow* launcher, RECT client)
@@ -216,7 +321,7 @@ namespace
             0, 0, 0, 0, hwnd, nullptr, launcher->config.instance, nullptr);
 
         launcher->open_button = CreateWindowExW(
-            0, L"BUTTON", L"Open rawBit interface", WS_CHILD | WS_VISIBLE | WS_TABSTOP,
+            0, L"BUTTON", L"Open rawBit interface", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
             0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(kOpenButtonId)),
             launcher->config.instance, nullptr);
 
@@ -254,6 +359,24 @@ namespace
 
         switch(msg)
         {
+            // In launcher_window_proc, add this case
+
+            case WM_ACTIVATE:
+            {
+                // Re-apply DWM attributes when the window is activated
+                // to ensure Mica is consistently applied.
+                if (wparam == WA_ACTIVE || wparam == WA_CLICKACTIVE)
+                {
+                    apply_mica(hwnd);
+                }
+                else if (wparam == WA_INACTIVE)
+                {
+                    // Optional: Disable effect when inactive
+                    disable_mica(hwnd);
+                }
+                return 0; // Important: Return 0 to indicate you handled it
+            }
+
             case WM_NCCREATE:
             {
                 CREATESTRUCTW* cs = reinterpret_cast<CREATESTRUCTW*>(lparam);
@@ -263,6 +386,25 @@ namespace
                 }
                 return TRUE;
             }
+
+            case WM_NCPAINT:
+                return 0;
+                
+
+            case WM_PAINT:
+            {
+                PAINTSTRUCT ps;
+                HDC hdc = BeginPaint(hwnd, &ps);
+
+                // FIX 2: Fill the background with a solid color.
+                // DWM will replace this with the Mica effect, but this makes
+                // hit-testing reliable for window dragging.
+                FillRect(hdc, &ps.rcPaint, (HBRUSH)GetStockObject(BLACK_BRUSH));
+
+                EndPaint(hwnd, &ps);
+                return 0;
+            }
+
 
             case WM_CREATE:
                 return handle_create(hwnd, reinterpret_cast<LPCREATESTRUCTW>(lparam));
@@ -321,21 +463,47 @@ namespace
                 }
                 break;
 
-            case WM_NCHITTEST:
-            {
-                LRESULT hit = DefWindowProcW(hwnd, msg, wparam, lparam);
-                if(hit == HTCLIENT)
+            case WM_CTLCOLORSTATIC:
+                if(launcher)
                 {
-                    POINT pt = {GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
-                    ScreenToClient(hwnd, &pt);
-                    HWND child = ChildWindowFromPointEx(hwnd, pt, CWP_SKIPINVISIBLE | CWP_SKIPDISABLED);
-                    if(child == nullptr || child == hwnd)
+                    HDC dc = reinterpret_cast<HDC>(wparam);
+                    HWND target = reinterpret_cast<HWND>(lparam);
+                    if(target == launcher->primary_text || target == launcher->secondary_text)
                     {
-                        return HTCAPTION;
+                        SetTextColor(dc, RGB(240, 240, 240));
+                        SetBkMode(dc, TRANSPARENT);
+                        return reinterpret_cast<LRESULT>(GetStockObject(NULL_BRUSH));
                     }
                 }
-                return hit;
+                break;
+
+            case WM_DRAWITEM:
+                if(launcher && wparam == kOpenButtonId)
+                {
+                    draw_open_button(launcher, reinterpret_cast<DRAWITEMSTRUCT*>(lparam));
+                    return TRUE;
+                }
+                break;
+
+            case WM_NCHITTEST:
+            {
+                POINT pt = { GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam) };
+                ScreenToClient(hwnd, &pt);
+
+                HWND child = ChildWindowFromPointEx(
+                    hwnd, pt,
+                    CWP_SKIPINVISIBLE | CWP_SKIPDISABLED
+                );
+
+                // If clicking on nothing -> drag
+                if (!child || child == hwnd)
+                    return HTCAPTION;
+
+                // Otherwise it's a normal client area
+                return HTCLIENT;
             }
+
+
 
             case WM_SIZE:
                 if(launcher)
@@ -345,6 +513,10 @@ namespace
                     layout_controls(launcher, rc);
                 }
                 break;
+
+            case WM_ERASEBKGND:
+                return 1;
+
 
             default:
                 if(launcher && msg == launcher->tray_message_id)
@@ -384,10 +556,10 @@ int launcher_window_init(LauncherWindow* launcher, const LauncherWindowConfig* c
     }
 
     HWND hwnd = CreateWindowExW(
-        WS_EX_APPWINDOW,
+        WS_EX_APPWINDOW ,
         kWindowClassName,
         APP_TITLE_W,
-        WS_POPUP,
+        WS_POPUP | WS_CLIPCHILDREN,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
         420,
@@ -401,6 +573,17 @@ int launcher_window_init(LauncherWindow* launcher, const LauncherWindowConfig* c
     {
         return -3;
     }
+
+    LONG style = GetWindowLongW(hwnd, GWL_STYLE);
+    style &= ~(WS_CAPTION | WS_THICKFRAME | WS_BORDER);
+    SetWindowLongW(hwnd, GWL_STYLE, style);
+
+    LONG exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
+    exStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE | WS_EX_WINDOWEDGE);
+    SetWindowLongW(hwnd, GWL_EXSTYLE, exStyle);
+
+    SetWindowPos(hwnd, nullptr, 0,0,0,0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 
     launcher->window = hwnd;
     ShowWindow(hwnd, SW_SHOW);
