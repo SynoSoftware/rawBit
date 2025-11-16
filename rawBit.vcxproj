@@ -61,7 +61,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EntryPointSymbol>WinMainCRTStartup</EntryPointSymbol>
+      <EntryPointSymbol>wWinMainCRTStartup</EntryPointSymbol>
       <AdditionalDependencies>torrent-rasterbar.lib;bcrypt.lib;mswsock.lib;ws2_32.lib;iphlpapi.lib;Dbghelp.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)external\libtorrent-build\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
@@ -84,7 +84,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EntryPointSymbol>WinMainCRTStartup</EntryPointSymbol>
+      <EntryPointSymbol>wWinMainCRTStartup</EntryPointSymbol>
       <AdditionalDependencies>torrent-rasterbar.lib;bcrypt.lib;mswsock.lib;ws2_32.lib;iphlpapi.lib;Dbghelp.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)external\libtorrent-build\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>

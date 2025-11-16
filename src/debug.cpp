@@ -8,6 +8,10 @@ static char lastMessage[1024] = ""; // Increased buffer size slightly
 static CRITICAL_SECTION debugCritSec;
 static BOOL csInitialized = FALSE;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Function to initialize the critical section
 void InitializeDebugOutput()
 {
@@ -70,3 +74,7 @@ void DebugOut(const char* format, ...)
 
     LeaveCriticalSection(&debugCritSec); // Unlock
 }
+
+#ifdef __cplusplus
+}
+#endif
