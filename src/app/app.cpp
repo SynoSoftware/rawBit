@@ -57,6 +57,8 @@ int rawbit_app_init(RawBitApp* app, const RawBitAppConfig* config, HINSTANCE ins
     HttpServerConfig http_cfg;
     http_server_config_default(&http_cfg);
     http_cfg.port = app->config.http_port;
+    http_cfg.broadcast_interval_ms = app->config.engine_tick_ms;
+    http_cfg.engine = &app->engine;
     if(http_server_init(&app->http, &http_cfg) != 0)
     {
         DebugOut("rawbit_app: HTTP server failed to start.\n");
