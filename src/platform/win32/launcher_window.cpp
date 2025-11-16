@@ -4,6 +4,7 @@
 #include <dwmapi.h>
 #include <shellapi.h>
 #include <stdio.h>
+#include <windowsx.h>
 
 #include "config.h"
 #include "debug.h"
@@ -26,6 +27,9 @@ namespace
 #ifndef DWMWA_SYSTEMBACKDROP_TYPE
 #define DWMWA_SYSTEMBACKDROP_TYPE 38
 #endif
+#ifndef DWMWA_MICA_EFFECT
+#define DWMWA_MICA_EFFECT 1029
+#endif
 #ifndef DWMSBT_MAINWINDOW
 #define DWMSBT_MAINWINDOW 2
 #endif
@@ -44,6 +48,12 @@ namespace
 
         const DWORD backdrop = DWMSBT_MAINWINDOW;
         DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(backdrop));
+
+        BOOL enable_mica = TRUE;
+        DwmSetWindowAttribute(hwnd, DWMWA_MICA_EFFECT, &enable_mica, sizeof(enable_mica));
+
+        const MARGINS margins = {-1, -1, -1, -1};
+        DwmExtendFrameIntoClientArea(hwnd, &margins);
     }
 
     void layout_controls(LauncherWindow* launcher, RECT client)
@@ -290,7 +300,7 @@ namespace
                     DestroyWindow(hwnd);
                     return 0;
                 }
-                invoke_callback(launcher, LauncherCommand_Quit);
+                ShowWindow(hwnd, SW_MINIMIZE);
                 return 0;
 
             case WM_COMMAND:
@@ -310,6 +320,22 @@ namespace
                     return 0;
                 }
                 break;
+
+            case WM_NCHITTEST:
+            {
+                LRESULT hit = DefWindowProcW(hwnd, msg, wparam, lparam);
+                if(hit == HTCLIENT)
+                {
+                    POINT pt = {GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
+                    ScreenToClient(hwnd, &pt);
+                    HWND child = ChildWindowFromPointEx(hwnd, pt, CWP_SKIPINVISIBLE | CWP_SKIPDISABLED);
+                    if(child == nullptr || child == hwnd)
+                    {
+                        return HTCAPTION;
+                    }
+                }
+                return hit;
+            }
 
             case WM_SIZE:
                 if(launcher)
@@ -361,7 +387,7 @@ int launcher_window_init(LauncherWindow* launcher, const LauncherWindowConfig* c
         WS_EX_APPWINDOW,
         kWindowClassName,
         APP_TITLE_W,
-        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+        WS_POPUP,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
         420,
