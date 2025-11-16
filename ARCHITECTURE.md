@@ -1,122 +1,125 @@
-
 # ARCHITECTURE.md
 
-## 1. Overview
+rawBit is a **tiny Windows-only BitTorrent client** with:
 
-**rawBit** is a **Windows 11 BitTorrent client** focused on:
+* C++ engine using a **C-style subset** of modern C++
+* direct **libtorrent** integration (no C wrapper)
+* tiny embedded **HTTP/JSON + WebSocket** server
+* minimal **Win32 Mica launcher window** + tray icon
+* real UI in the system browser (TypeScript SPA)
 
-- Small native binary (≈ a few MB).
-- Minimal UI footprint.
-- Using libtorrent as the engine with direct C++ integration.
-- A browser-based Web UI (TypeScript → JS) for all real interaction.
+Goal: **do the job perfectly, stay extremely small, keep full control.**
+For C++ rules, STL whitelist and build flags, see **AGENTS.md**.
 
-Architecture:
+---
+
+## 1. System overview
 
 ```text
-+--------------------+         HTTP/JSON + WebSocket        +-----------------------+
-|  Browser (Edge)    | <-----------------------------------> | Embedded HTTP Server  |
-|  Web UI (TS → JS)  |                                       | inside rawBit.exe     |
-+--------------------+                                       +-----------+-----------+
++--------------------+         HTTP/JSON + WebSocket      +-----------------------+
+|  Browser (Edge)    | <---------------------------------> | Embedded HTTP Server  |
+|  Web UI (TS → JS)  |                                      | inside rawBit.exe     |
++--------------------+                                      +-----------+-----------+
                                                                        |
                                                                        v
                                                          +-------------+-------------+
-                                                         |      Engine (C++ C-style) |
-                                                         |  - Libtorrent session     |
-                                                         |  - Torrent registry       |
-                                                         |  - Config & stats         |
+                                                         |   Engine (C++ C-style)    |
+                                                         |  - libtorrent session    |
+                                                         |  - torrent registry      |
+                                                         |  - stats & config        |
                                                          +-------------+-------------+
                                                                        ^
                                                                        |
                                  +-------------------------------------+-------------------------+
-                                 |    Win32 Mica window + tray icon (launcher & minimal status) |
+                                 |   Win32 Mica window + tray icon (launcher & minimal status)  |
                                  +--------------------------------------------------------------+
-````
+```
 
 ---
 
 ## 2. Components
 
-### 2.1 `rawBit.exe`
-
-Single native process, built as C++ (C-style).
+### 2.1 `rawBit.exe` (single native process)
 
 Responsibilities:
 
-* Create and manage a libtorrent session.
+* Create and manage the **libtorrent session**.
 * Manage torrents (add, pause, resume, remove, query status).
 * Expose a **local-only** HTTP/JSON + WebSocket API.
 * Show a minimal **Mica window** with:
 
-  * a short message,
-  * a button to open the Web UI.
+  * short text (engine running, how to open UI),
+  * one button to open the Web UI.
 * Provide a **tray icon** for quick access and exit.
 
-Submodules:
+Submodules (names indicative):
 
-1. **Engine core (`engine/`)**
+1. **Engine core (`src/engine/`)**
 
-   * `engine_session`:
+   * `engine_session`
 
      * Owns libtorrent `session`.
-     * Applies configuration (limits, features flags).
-   * `engine_torrents`:
+     * Applies configuration (limits, feature flags).
+     * Polls alerts.
+   * `engine_torrents`
 
-     * Stores torrent entries (ID, name, handles, basic state).
+     * Stores torrent entries (ID, name, libtorrent handle, state).
      * Provides simple functions:
 
        * `add_torrent(...)`
        * `pause_torrent(id)`
        * `resume_torrent(id)`
        * `remove_torrent(id)`
-       * `get_torrent_status(id, &out_status)`
-   * `engine_stats`:
+       * `get_torrent_status(id, &out_status)` (fills a small POD struct)
+   * `engine_stats`
 
      * Aggregates global stats:
 
-       * download/upload rate
-       * totals
-       * counts (number of torrents, peers).
+       * download/upload rates,
+       * totals,
+       * counts (torrents, peers).
 
-   All of this is direct C++ integrating with libtorrent, but using plain structs and functions.
+   All of this is direct C++ integration with libtorrent, but via **plain structs and functions**.
 
-2. **HTTP server + API (`net/`)**
+2. **HTTP server + API (`src/net/`)**
 
    * Minimal HTTP listener bound to `127.0.0.1:PORT`.
    * Routes:
 
-     * `/` → serve `index.html` (from Web UI dist folder).
+     * `/` → serve `index.html` (Web UI).
      * `/assets/...` → static files (`app.js`, `app.css`, etc.).
      * `/api/...` → JSON API endpoints.
      * `/ws` → WebSocket endpoint.
-   * API handlers call the engine functions synchronously or via a lightweight queue (depending on locking strategy).
+   * API handlers call engine functions directly or via a small command queue (depending on locking model).
 
-3. **Event/notification layer**
+3. **Event / notification layer**
 
-   * Periodically polls libtorrent alerts from `engine_session`.
+   * Runs on the engine thread (or a small helper inside `engine_session`).
+   * Periodically polls libtorrent alerts.
    * Translates alerts to internal events:
 
-     * torrent added
+     * torrent added / removed
      * torrent finished
      * error
-     * tracker update
+     * tracker updates
    * Pushes events out via WebSocket to connected Web UI clients.
 
-4. **Win32 launcher (`platform/win32/`)**
+4. **Win32 launcher (`src/platform/win32/`)**
 
    * Creates a small **Mica** window:
 
      * Title: `rawBit`
-     * Static text: engine running, instruction text (and any mandatory config hints).
-     * Button: **“Open interface in browser”**.
+     * Static text: engine running, “open in browser” instructions, optional mandatory config hints.
+     * Button: **“Open rawBit interface”**.
    * Creates a tray icon with context menu:
 
      * “Open interface”
      * Optional: “Pause all”
      * “Quit”
-   * `Open interface`:
+   * “Open interface”:
 
      * Calls `ShellExecute` with `http://127.0.0.1:PORT/`.
-   * `Quit`:
+   * “Quit”:
 
      * Signals engine to shut down:
 
@@ -128,155 +131,176 @@ Submodules:
 
 ## 3. Native language choices
 
-Even though the codebase is compiled as C++, design follows:
+Even though the codebase is compiled as C++:
 
-* plain structs and enums,
-* plain functions,
-* minimal RAII where it clearly simplifies resource handling (sockets, file handles, etc.),
-* no exceptions, no RTTI, minimal STL usage.
+* Design uses:
 
-This allows:
+  * plain structs and enums,
+  * plain functions,
+  * minimal RAII where it clearly simplifies resource handling (sockets, file handles, etc.).
+* No exceptions, no RTTI, minimal STL — see **AGENTS.md** for the detailed usage policy.
+* **No separate C wrapper** layer around libtorrent.
 
-* direct use of libtorrent,
-* minimal binary bloat,
-* simple mental model similar to C.
+Result:
 
-No separate C wrapper layer exists.
+* Direct use of libtorrent.
+* Minimal binary bloat.
+* Simple mental model similar to C.
 
 ---
 
 ## 4. Threading model
 
-Target:
+Target threads:
 
-* **GUI thread** (Win32):
+* **GUI thread (Win32)**
 
-  * Runs message loop.
-  * Does not call heavy engine operations directly.
-  * Interacts via small, non-blocking calls or posts signals.
+  * Runs the message loop.
+  * Owns the Mica window and tray icon.
+  * Does not perform heavy engine operations.
+  * Interacts with engine via:
 
-* **Engine thread**:
+    * small, non-blocking calls, or
+    * posted messages / command queue.
 
-  * Owns the libtorrent session.
+* **Engine thread**
+
+  * Owns the libtorrent `session`.
   * Performs:
 
-    * alert polling.
-    * torrent state updates.
-    * periodic stat aggregation.
+    * alert polling,
+    * torrent state updates,
+    * periodic stats aggregation.
   * Processes commands from:
 
     * HTTP server (add/pause/resume/remove),
-    * GUI (pause all/shutdown).
+    * GUI (pause all / shutdown).
 
-* **HTTP server thread(s)**:
+* **HTTP server thread(s)**
 
-  * Accepts and handles HTTP/WebSocket connections.
-  * Parses requests, writes responses.
-  * Calls engine methods via:
+  * Accept and handle HTTP/WebSocket connections.
+  * Parse requests, write responses.
+  * Call engine methods via:
 
-    * direct calls with mutex protection, or
-    * a command queue processed by engine thread.
+    * direct calls under a light mutex, or
+    * a command queue processed by the engine thread.
 
-* **Libtorrent internal threads**:
+* **Libtorrent internal threads**
 
-  * Disk IO, networking, etc. (managed internally by libtorrent).
+  * Disk I/O, networking, etc. managed internally by libtorrent.
 
 Invariants:
 
-* Engine thread is the single writer of torrent and session state.
-* HTTP and GUI threads may read aggregated status snapshots under light locking.
-* No long blocking operations on GUI thread.
+* Engine thread is the **single writer** of torrent and session state.
+* HTTP and GUI threads may read **aggregated snapshots** under light locking.
+* No long blocking operations on the GUI thread.
+* No thread explosion: keep thread count small and predictable.
+* No busy loops or high-frequency timers; typical engine polling interval **250–1000 ms**.
 
 ---
 
 ## 5. Libtorrent configuration
 
-Centralized in an engine configuration module:
+Centralized in an engine configuration module (e.g. `engine_config`):
 
 * At session creation:
 
   * Apply default parameters:
 
-    * limits on connections,
-    * enable/disable DHT, uTP, encryption as decided,
+    * connection limits,
+    * DHT / uTP / encryption settings (as decided),
     * rate limits (optional).
-  * Only a small, documented subset of libtorrent options is used.
+* Only a **small, documented subset** of libtorrent options is used.
+* All configuration lives in one place so behavior is easy to audit.
 
-Rationale:
-
-* All session behavior is tuned from one place.
-* Changes to libtorrent configuration are easy to audit and reason about.
+Other code **must not** tweak libtorrent configuration directly.
 
 ---
 
 ## 6. HTTP API (high level)
 
-Core endpoints:
+Server requirements:
+
+* Bind to `127.0.0.1` only.
+* Use plain HTTP/JSON.
+* Narrow, stable API that the Web UI fully relies on.
+
+Minimum endpoints:
 
 * `GET /api/torrents`
+  Returns a list of torrents with fields like:
 
-  * Returns:
+  * `id`
+  * `name`
+  * `progress` (0..1 or %)
+  * `download_rate`
+  * `upload_rate`
+  * `state`
+  * `num_peers`
 
-    * `id`
-    * `name`
-    * `progress`
-    * `download_rate`
-    * `upload_rate`
-    * `state`
-    * `num_peers`
 * `POST /api/torrents`
+  Add torrent. Body:
 
-  * Add torrent.
-  * Body:
+  * `{ "path": "C:\\path\\file.torrent" }` **or**
+  * `{ "magnet": "magnet:?..." }`
+    Returns:
+  * `{ "id": "<id>" }`
 
-    * `{ "path": "C:\\path\\file.torrent" }` or `{ "magnet": "magnet:?..." }`
-  * Returns: `{ "id": "<id>" }`
 * `POST /api/torrents/{id}/pause`
+
 * `POST /api/torrents/{id}/resume`
+
 * `DELETE /api/torrents/{id}`
+
 * `GET /api/session`
+  Returns global stats:
 
-  * Global stats: rates, totals, counts, etc.
+  * rates,
+  * totals,
+  * counts, etc.
 
-Events via WebSocket `/ws`:
+WebSocket at `/ws`:
 
-* `torrent_updated`
-* `torrent_finished`
-* `torrent_error`
-* `session_update` (optional for global stats)
+* Emits events such as:
 
-The API is intentionally narrow; all UI functionality must sit on top of this.
+  * `torrent_updated`
+  * `torrent_finished`
+  * `torrent_error`
+  * optional `session_update` for global stats
+
+The Web UI **must** use only this backend. No extra native protocols.
 
 ---
 
 ## 7. Startup and shutdown
 
-**Startup:**
+### 7.1 Startup
 
 1. `main()`:
 
-   * Load configuration.
-   * Initialize libtorrent session and engine thread.
+   * Load configuration (if any).
+   * Initialize libtorrent session and engine state.
+   * Start engine thread.
    * Start HTTP server.
-   * Initialize Win32, create Mica window + tray icon.
-2. Launcher shows:
+   * Initialize Win32, create Mica window and tray icon.
+2. Launcher window shows:
 
-   * Short instructions.
-   * “Open interface” button.
+   * Short instruction text.
+   * “Open rawBit interface” button.
 3. User clicks “Open interface”:
 
    * Browser opens `http://127.0.0.1:PORT/`.
-   * Web UI loads and starts polling `/api/...` and connecting to `/ws`.
+   * Web UI loads, calls `/api/...` and connects to `/ws`.
 
-**Shutdown:**
+### 7.2 Shutdown
 
 1. User selects “Quit” from tray or closes the main window.
 2. GUI signals engine:
 
    * HTTP server stops accepting new connections.
-   * Existing connections are given a short timeout to finish.
+   * Existing connections get a short timeout to finish.
    * Engine stops torrents cleanly and shuts down libtorrent session.
-3. Main thread waits for engine/HTTP threads to exit.
+3. Main thread waits for engine and HTTP threads to exit.
 4. Process terminates.
 
 Goal: no zombie threads, no stuck sockets, no dirty shutdown.
@@ -291,9 +315,18 @@ Suggested layout:
 / rawbit
   /src
     /engine        # libtorrent integration, session/torrents/stats (C++ C-style)
+      engine_session.*
+      engine_torrents.*
+      engine_stats.*
+      engine_config.*
     /net           # HTTP server, routing, WebSocket, JSON handling
+      http_server.*
+      http_routes.*
+      ws_server.*
     /platform
       /win32       # Mica window, tray icon, ShellExecute, etc.
+        win_main.*
+        win_tray.*
   /webui
     /src           # TS source for SPA
     /dist          # Built static assets (index.html, app.js, app.css, etc.)
@@ -301,11 +334,24 @@ Suggested layout:
   ARCHITECTURE.md
 ```
 
+Exact names can vary, but **separation of concerns must remain**:
+
+* `engine/` owns libtorrent and torrent state.
+* `net/` owns HTTP/WS, JSON, and routing.
+* `platform/win32/` owns Win32 boilerplate.
+* `webui/` is pure TypeScript/HTML/CSS, with no native code.
+
 ---
 
 ## 9. Extension points
 
-Future features:
+Future extensions should:
+
+* Reuse the existing engine + HTTP + Web UI structure.
+* Keep the API narrow and JSON-based.
+* Stay within the C++ subset and build rules defined in **AGENTS.md**.
+
+Examples:
 
 * More torrent metadata:
 
@@ -313,20 +359,33 @@ Future features:
   * extend JSON returned by `/api/torrents`.
 * Settings UI:
 
-  * add `/api/settings` endpoints.
+  * add `/api/settings` endpoints,
+  * store config in a small INI or tiny JSON file.
 * Per-torrent limits:
 
-  * add engine calls for speed/connection limits.
+  * engine calls for speed/connection limits,
+  * matching API and UI controls.
 
-Any extension:
+Forbidden:
 
-* must reuse the existing engine and HTTP infrastructure,
-* must not introduce new protocols or runtimes,
-* must keep the binary small and behavior predictable.
+* New runtimes (no .NET, JVM, Python, Node, Qt, GTK, WebView2, Electron).
+* Heavy libraries or huge dependency trees.
+* New GUI stacks.
+* Alternative frontends that bypass the HTTP/JSON + WebSocket API.
+* Any change that significantly increases EXE size for marginal gain.
 
-The core structure—**native engine + HTTP API + browser UI + minimal Win32 launcher**—is fixed and should not be overturned.
+---
 
-```
+## 10. Architecture philosophy
 
-::contentReference[oaicite:0]{index=0}
-```
+The core structure is fixed:
+
+> **Native engine + HTTP API + browser UI + minimal Win32 launcher.**
+
+* C++ with only the size-safe parts (see AGENTS.md).
+* Direct libtorrent integration.
+* Win32 launcher only; real UI is in the browser.
+* Tiny HTTP server; narrow JSON API; one WebSocket endpoint.
+* No bloat, no unnecessary layers.
+
+rawBit does exactly what it should — **no more, no less — with the smallest possible footprint.**
