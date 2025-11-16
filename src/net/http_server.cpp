@@ -239,7 +239,7 @@ namespace
             return false;
         }
 
-        std::string uri(message->uri.ptr, message->uri.len);
+        std::string uri(message->uri.buf, message->uri.len);
         const std::string prefix = "/api/torrents/";
         if(uri.rfind(prefix, 0) != 0)
         {
@@ -313,7 +313,7 @@ namespace
         {
             return false;
         }
-        const struct mg_str uri = mg_str_n(message->uri.ptr, message->uri.len);
+        const struct mg_str uri = message->uri;
         const struct mg_str pat = mg_str(pattern);
         return mg_match(uri, pat, nullptr);
     }
