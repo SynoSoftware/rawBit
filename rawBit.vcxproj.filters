@@ -34,25 +34,28 @@
     <None Include="readme.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\debug.c">
+    <ClCompile Include="src\debug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\main.c">
+    <ClCompile Include="src\app\app.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\tray.c">
+    <ClCompile Include="src\engine\engine_session.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\win11ui.c">
+    <ClCompile Include="src\net\http_server.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\window.c">
+    <ClCompile Include="src\platform\win32\launcher_window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\torrent.cpp">
+    <ClCompile Include="src\platform\win32\tray_icon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\torrent_engine.cpp">
+    <ClCompile Include="src\platform\win32\win_entry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="external\mongoose\mongoose.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -66,16 +69,19 @@
     <ClInclude Include="src\resources.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\tray.h">
+    <ClInclude Include="src\app\app.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\win11ui.h">
+    <ClInclude Include="src\engine\engine_session.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\window.h">
+    <ClInclude Include="src\net\http_server.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\torrent_engine.h">
+    <ClInclude Include="src\platform\win32\launcher_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\platform\win32\tray_icon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

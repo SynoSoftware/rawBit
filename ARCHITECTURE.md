@@ -92,6 +92,20 @@ Submodules (names indicative):
      * `/ws` → WebSocket endpoint.
    * API handlers call engine functions directly or via a small command queue (depending on locking model).
 
+    * Embedded Mongoose HTTP/WS server (tiny footprint)
+    * JSON parsing via Mongoose's built-in mg_json API
+    * JSON serialization via simple mg_printf-based builders
+
+        Note on Mongoose:
+
+        Mongoose is used for HTTP/JSON/WebSocket because it lets us deliver quickly with minimal code.
+        If its binary impact ever becomes significant, this layer is fully replaceable with a custom
+        micro-server (~500–800 LOC). The engine and UI are deliberately structured so that the HTTP/WS
+        front-end can be swapped without touching torrent logic or UI code.
+
+
+
+
 3. **Event / notification layer**
 
    * Runs on the engine thread (or a small helper inside `engine_session`).

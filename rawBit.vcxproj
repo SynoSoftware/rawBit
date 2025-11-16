@@ -53,7 +53,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;BOOST_ASIO_ENABLE_CANCELIO;BOOST_ASIO_NO_DEPRECATED;WIN32_LEAN_AND_MEAN;BOOST_ALL_NO_LIB;_SCL_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_WIN32_WINNT=0x0A00;TORRENT_USE_ASSERTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)external\libtorrent\include;$(ProjectDir)external\boost;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)external\libtorrent\include;$(ProjectDir)external\boost;$(ProjectDir)external\mongoose;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -74,7 +74,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;BOOST_ASIO_ENABLE_CANCELIO;BOOST_ASIO_NO_DEPRECATED;WIN32_LEAN_AND_MEAN;BOOST_ALL_NO_LIB;_SCL_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_WIN32_WINNT=0x0A00;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)external\libtorrent\include;$(ProjectDir)external\boost;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)external\libtorrent\include;$(ProjectDir)external\boost;$(ProjectDir)external\mongoose;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -101,32 +101,24 @@
     <None Include="readme.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\aboutpage.c" />
-    <ClCompile Include="src\debug.c" />
-    <ClCompile Include="src\main.c" />
-    <ClCompile Include="src\pagemanager.c" />
-    <ClCompile Include="src\settingspage.c" />
-    <ClCompile Include="src\torrent.cpp" />
-    <ClCompile Include="src\torrent_engine.cpp" />
-    <ClCompile Include="src\torrentlistpage.c" />
-    <ClCompile Include="src\tray.c" />
-    <ClCompile Include="src\win11ui.c" />
-    <ClCompile Include="src\window.c" />
+    <ClCompile Include="src\app\app.cpp" />
+    <ClCompile Include="src\debug.cpp" />
+    <ClCompile Include="src\engine\engine_session.cpp" />
+    <ClCompile Include="src\net\http_server.cpp" />
+    <ClCompile Include="src\platform\win32\launcher_window.cpp" />
+    <ClCompile Include="src\platform\win32\tray_icon.cpp" />
+    <ClCompile Include="src\platform\win32\win_entry.cpp" />
+    <ClCompile Include="external\mongoose\mongoose.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\aboutpage.h" />
+    <ClInclude Include="src\app\app.h" />
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\debug.h" />
-    <ClInclude Include="src\page.h" />
-    <ClInclude Include="src\pagemanager.h" />
+    <ClInclude Include="src\engine\engine_session.h" />
+    <ClInclude Include="src\net\http_server.h" />
+    <ClInclude Include="src\platform\win32\launcher_window.h" />
+    <ClInclude Include="src\platform\win32\tray_icon.h" />
     <ClInclude Include="src\resources.h" />
-    <ClInclude Include="src\settingspage.h" />
-    <ClInclude Include="src\torrent.h" />
-    <ClInclude Include="src\torrentlistpage.h" />
-    <ClInclude Include="src\torrent_engine.h" />
-    <ClInclude Include="src\tray.h" />
-    <ClInclude Include="src\win11ui.h" />
-    <ClInclude Include="src\window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
