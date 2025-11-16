@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include <errno.h>
 
 #include <string>
 
@@ -284,8 +285,37 @@ namespace
             return false;
         }
         buffer[0] = '\0';
-        const int copied = mg_json_get(json, path, buffer, static_cast<int>(buffer_len));
-        return copied > 0;
+
+        char* value = mg_json_get_str(json, path);
+        if(!value)
+        {
+            return false;
+        }
+
+        const errno_t copy_result = strncpy_s(buffer, buffer_len, value, _TRUNCATE);
+        free(value);
+        return copy_result == 0 && buffer[0] != '\0';
+    }
+
+    static bool http_method_is(const struct mg_http_message* message, const char* method)
+    {
+        if(!message || !method)
+        {
+            return false;
+        }
+        const struct mg_str expected = mg_str(method);
+        return mg_strcmp(message->method, expected) == 0;
+    }
+
+    static bool http_uri_matches(const struct mg_http_message* message, const char* pattern)
+    {
+        if(!message || !pattern)
+        {
+            return false;
+        }
+        const struct mg_str uri = mg_str_n(message->uri.ptr, message->uri.len);
+        const struct mg_str pat = mg_str(pattern);
+        return mg_match(uri, pat, nullptr);
     }
 
     static void handle_add_torrent(struct mg_connection* connection, HttpServer* server, const struct mg_http_message* message)
@@ -399,7 +429,7 @@ namespace
         unsigned int torrent_id = 0;
         const bool has_id = parse_torrent_path(message, &torrent_id, action);
 
-        if(!has_id && mg_vcmp(&message->method, "GET") == 0)
+        if(!has_id && http_method_is(message, "GET"))
         {
             EngineSessionSnapshot snapshot;
             reset_snapshot(&snapshot);
@@ -411,19 +441,19 @@ namespace
             return;
         }
 
-        if(!has_id && mg_vcmp(&message->method, "POST") == 0)
+        if(!has_id && http_method_is(message, "POST"))
         {
             handle_add_torrent(connection, server, message);
             return;
         }
 
-        if(has_id && mg_vcmp(&message->method, "DELETE") == 0)
+        if(has_id && http_method_is(message, "DELETE"))
         {
             handle_remove_torrent(connection, server, torrent_id);
             return;
         }
 
-        if(has_id && mg_vcmp(&message->method, "POST") == 0)
+        if(has_id && http_method_is(message, "POST"))
         {
             handle_modify_torrent(connection, server, torrent_id, action);
             return;
@@ -434,25 +464,25 @@ namespace
 
     static bool handle_api_request(struct mg_connection* connection, HttpServer* server, struct mg_http_message* message)
     {
-        if(mg_http_match_uri(message, "/api/session"))
+        if(http_uri_matches(message, "/api/session"))
         {
             handle_session_request(connection, server);
             return true;
         }
 
-        if(mg_http_match_uri(message, "/api/torrents"))
+        if(http_uri_matches(message, "/api/torrents"))
         {
             handle_torrents_request(connection, server, message);
             return true;
         }
 
-        if(mg_http_match_uri(message, "/api/torrents/*"))
+        if(http_uri_matches(message, "/api/torrents/*"))
         {
             handle_torrents_request(connection, server, message);
             return true;
         }
 
-        if(mg_http_match_uri(message, "/ws"))
+        if(http_uri_matches(message, "/ws"))
         {
             mg_ws_upgrade(connection, message, nullptr);
             return true;
@@ -492,9 +522,14 @@ namespace
         }
     }
 
-    static void handle_http_event(struct mg_connection* connection, int event, void* event_data, void* user_data)
+    static void handle_http_event(struct mg_connection* connection, int event, void* event_data)
     {
-        HttpServer* server = reinterpret_cast<HttpServer*>(user_data);
+        if(!connection)
+        {
+            return;
+        }
+
+        HttpServer* server = reinterpret_cast<HttpServer*>(connection->fn_data);
         if(!server)
         {
             return;
