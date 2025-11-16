@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>rawBit</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app">
+        <header class="hero">
+            <div>
+                <p class="hero__eyebrow">rawBit</p>
+                <h1>Tiny BitTorrent engine</h1>
+                <p class="hero__lead">All torrent control lives in this page. The native binary only runs the engine.</p>
+            </div>
+            <div class="hero__status">
+                <span>HTTP port</span>
+                <strong data-field="port">—</strong>
+            </div>
+        </header>
+
+        <main class="grid">
+            <section class="card">
+                <h2>Add torrent</h2>
+                <form id="add-form" autocomplete="off">
+                    <label>
+                        Magnet URI
+                        <input id="magnet-input" type="text" required placeholder="magnet:?xt=urn:btih:..." />
+                    </label>
+                    <label>
+                        Display name
+                        <input id="name-input" type="text" placeholder="Optional" />
+                    </label>
+                    <label>
+                        Approximate size (MB)
+                        <input id="size-input" type="number" min="0" step="1" placeholder="512" />
+                    </label>
+                    <button type="submit">Add torrent</button>
+                </form>
+            </section>
+
+            <section class="card">
+                <h2>Session</h2>
+                <dl class="stats">
+                    <div>
+                        <dt>Torrents</dt>
+                        <dd data-field="torrent_count">0</dd>
+                    </div>
+                    <div>
+                        <dt>Active</dt>
+                        <dd data-field="active">0</dd>
+                    </div>
+                    <div>
+                        <dt>↓ Download</dt>
+                        <dd data-field="download_rate">0 B/s</dd>
+                    </div>
+                    <div>
+                        <dt>↑ Upload</dt>
+                        <dd data-field="upload_rate">0 B/s</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="card card--span">
+                <div class="card__header">
+                    <h2>Activity</h2>
+                    <button type="button" class="link-button" data-role="refresh">Refresh</button>
+                </div>
+                <div class="empty" data-role="empty-state">No torrents yet. Add one to get going.</div>
+                <div class="torrent-list" data-role="torrents"></div>
+            </section>
+        </main>
+    </div>
+
+    <div class="toast" data-role="toast"></div>
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>

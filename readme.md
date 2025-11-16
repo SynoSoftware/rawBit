@@ -1,109 +1,80 @@
 # rawBit
 
-*A tiny, efficient BitTorrent client for Windows 11 — with a minimal native footprint and a modern browser UI.*
+rawBit is a tiny, Windows-only BitTorrent client.  
+The native binary is only responsible for the libtorrent engine, the HTTP/JSON + WebSocket API, and a minimal Win32 launcher window with Mica styling + tray icon. Everything else happens in the browser UI.
 
-rawBit is built with one goal:
-**provide a clean, fast, stable BitTorrent engine with an extremely small binary and zero UI bloat.**
+Goals:
 
-It uses:
+* keep the executable extremely small,
+* keep performance predictable,
+* expose a single, well defined API to the TypeScript front-end,
+* avoid every form of UI bloat.
 
-* **C++ (C-style subset)** for a compact, predictable native core
-* **libtorrent** for the torrent engine
-* **a tiny embedded HTTP/JSON + WebSocket server**
-* **a minimal Win32 Mica launcher window**
-* **a TypeScript browser UI** for all interaction
-
-Nothing else.
-No frameworks.
-No heavy runtimes.
-No GUI toolkits.
-No WebView2, no Qt, no GTK, no Electron.
-
-rawBit does exactly what it should — **no more, no less.**
+The design constraints are documented in `AGENTS.md` and expanded in `ARCHITECTURE.md`.
 
 ---
 
-## 🚀 Features
+## Features
 
-* ⚡ **Fast and lightweight** — single small `.exe` + libtorrent
-* 🌐 **Browser UI** — runs in Edge/Chrome locally
-* 🔌 **Direct libtorrent integration**
-* 🖥️ **Minimal Windows 11 launcher** (Mica window + tray icon)
-* 🔒 **Local-only HTTP server** (`127.0.0.1:<port>`)
-* 📡 **WebSocket live updates**
-* 📁 Add torrents via file or magnet link
-* ⏸️ Pause/resume
-* 🗑️ Remove torrents
-* 📊 Real-time stats
+* **Single native binary** compiled with MSVC – no Electron, WebView2, GTK, Qt, .NET, or scripting runtimes.
+* **Direct libtorrent session** wrapped in a tiny C-style engine module (no exceptions, no RTTI, minimal STL).
+* **Embedded HTTP/JSON + WebSocket server** (Mongoose) bound to `127.0.0.1:<port>`.
+* **Browser UI (TypeScript SPA)** served from `webui/dist/` – add torrents, pause/resume/remove, monitor stats, live updates via WebSocket.
+* **Win32 launcher window + tray icon** with one “Open interface” button and quick commands.
+* **Local-only security posture** – nothing leaves the machine, no remote control surface is exposed.
 
 ---
 
-## 🧱 Architecture (Short Overview)
+## Architecture (short overview)
 
 ```
-Browser (React/TS) ←→ HTTP/JSON + WebSocket ←→ rawBit.exe (C++ engine)
-                                           ↳ Win32 launcher window + tray
+Browser (TypeScript SPA) <-- HTTP/JSON + WebSocket --> rawBit.exe
+                                                        |
+                                                        +-- Engine (libtorrent session)
+                                                        |
+                                                        +-- Win32 launcher window + tray icon
 ```
 
-### Native core (C++ C-style subset)
-
-* Direct calls to libtorrent
-* POD structs
-* Small STL only (`vector`, `string`, `optional`, etc.)
-* No exceptions, no RTTI, no heavy abstractions
-
-### HTTP/JSON + WebSocket server
-
-* Minimal custom server
-* No frameworks
-* Serves the SPA + API + WS stream
-
-### Win32 launcher
-
-* Small Mica window
-* “Open interface” button
-* Tray menu: open / pause all / quit
-
-### Browser UI
-
-* TypeScript
-* Small bundle
-* Talks **only** to the provided HTTP API
-
-More details:
-See **AGENTS.md** and **ARCHITECTURE.md**.
+* `src/engine` – owns the libtorrent session and torrent registry (C++ written in a C-style subset).
+* `src/net` – embedded HTTP server, API routing, JSON serialization, WebSocket broadcast channel.
+* `src/platform/win32` – launcher window, tray icon, and ShellExecute link to the browser UI.
+* `webui/` – TypeScript SPA compiled to static assets that are served by the native binary.
 
 ---
 
-## 📦 Build Instructions
+## Build instructions
 
 ### Prerequisites
 
-* **Visual Studio 2022** (MSVC)
-* **CMake**
-* **Python** (for libtorrent build scripts if needed)
-* **Node.js** (for building the Web UI)
+* Visual Studio 2022 with MSVC toolset v143.
+* CMake (if you prefer CMake builds) or the provided Visual Studio solution.
+* Python + Boost to build libtorrent (see `scripts/build_libtorrent.ps1`).
+* Node.js ≥ 18 for the Web UI.
 
-### Clone
+### Clone + submodules
 
-```
-git clone https://github.com/your/repo.git rawbit
-cd rawbit
+```powershell
+git clone https://github.com/your/repo.git rawBit
+cd rawBit
 git submodule update --init --recursive
 ```
 
 ### Build libtorrent
 
-Refer to the included `scripts/build_libtorrent.ps1` or your own build setup.
+*Use the provided helper or your own build pipeline.*
+
+```powershell
+pwsh .\scripts\build_libtorrent.ps1 -Configuration Release
+```
+
+This produces `external/libtorrent-build/<Configuration>/torrent-rasterbar.lib`, which the Visual Studio project links against.
 
 ### Build rawBit.exe
 
-```
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --config Release
-```
+Open `rawBit.sln` in Visual Studio and build the `rawBit` project (Debug or Release).  
+The project already includes the correct include/library paths and linker flags.
 
-### Build WebUI
+### Build the Web UI
 
 ```
 cd webui
@@ -111,45 +82,43 @@ npm install
 npm run build
 ```
 
-Output goes to `webui/dist/`.
+This compiles `src/app.ts` to `dist/app.js` and copies the static HTML/CSS assets into `webui/dist/`. The HTTP server serves that directory automatically.
 
 ---
 
-## 🏁 Running rawBit
-
-Just run:
+## Running rawBit
 
 ```
 rawBit.exe
 ```
 
-It will:
+What happens:
 
-1. Start a libtorrent session
-2. Start a tiny local HTTP server on `127.0.0.1:<port>`
-3. Show a small launcher window
-4. Click “Open interface” → opens browser UI
+1. The engine starts a libtorrent session and worker thread.
+2. The embedded HTTP server binds to `http://127.0.0.1:<port>/` (default `32145`).
+3. A Mica launcher window appears with the **Open rawBit interface** button.
+4. Clicking the button (or the tray icon entry) launches the default browser pointed at the local UI.
+5. The browser UI communicates exclusively via the documented HTTP/JSON endpoints and `/ws`.
 
----
-
-## 🔒 Security Notes
-
-* HTTP server binds to **localhost only**
-* No remote access
-* No external services
-* No cloud dependency
+Use the tray icon to reopen the UI or quit the process. Selecting **Quit** shuts down the HTTP server and the engine cleanly.
 
 ---
 
-## 🧪 Status
+## Security notes
 
-rawBit is under active development.
-The core architecture is stable and intentionally minimal.
-Features will grow **only** when they maintain the size and clarity goals.
+* The HTTP server only listens on `127.0.0.1`.
+* No remote control or NAT exceptions are opened.
+* No credentials or telemetry are sent anywhere – everything remains on the local machine.
 
 ---
 
-## 📝 License
+## Status
+
+rawBit is intentionally small and opinionated.  
+Contributions are welcome only when they keep to the constraints in `AGENTS.md` – no new runtimes, no giant template libraries, no gratuitous features. The priority order is **binary size → determinism → clarity**.
+
+---
+
+## License
 
 MIT
-
