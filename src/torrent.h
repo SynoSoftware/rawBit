@@ -2,6 +2,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MAX_FILES_PER_TORRENT 256
 #define MAX_PATH_COMPONENTS    16
 #define MAX_FILENAME_LEN      256
@@ -56,8 +60,6 @@ int torrent_load(const char* path, Torrent* t);
 
 void torrent_free(Torrent* t); // (Definition should already exist in torrent.c)
 
-// --- Hashing ---
-// You need to implement or link this function externally.
-// It takes a pointer to the data and its length, and fills the 20-byte hash buffer.
-// Returns 0 on success, -1 on error.
-int calculate_sha1(const unsigned char* data, size_t data_len, unsigned char hash_out[20]);
+#ifdef __cplusplus
+}
+#endif

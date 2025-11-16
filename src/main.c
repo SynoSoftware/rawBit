@@ -13,6 +13,7 @@
 #include "window.h"      // Declares window_proc
 #include "config.h"      // Declares APP_TITLE_W (or use placeholder)
 #include "torrent.h"     // Declares Torrent, torrent_load, torrent_free
+#include "torrent_engine.h"
 #include "tray.h"        // Declares tray_icon_add
 #include "pagemanager.h" // Declares Page Manager API
 #include "page.h"        // Declares Page IDs
@@ -33,6 +34,18 @@
 #define APP_TITLE_W L"RawBit Torrent" // Example title
 #warning "APP_TITLE_W not found in included headers, using placeholder."
 #endif
+
+static TorrentEngine* g_torrent_engine = NULL;
+
+static void LogTorrentAlert(const char* message, int category_bits, void* user_data)
+{
+    UNREFERENCED_PARAMETER(category_bits);
+    UNREFERENCED_PARAMETER(user_data);
+    if(message)
+    {
+        DebugOut("libtorrent alert: %s\n", message);
+    }
+}
 
 
 int WINAPI WinMain(
@@ -102,6 +115,16 @@ int WINAPI WinMain(
     }
     DebugOut("WinMain: Main Window Created (HWND %p).\n", hwnd);
     // Note: WM_CREATE in window_proc is called implicitly during CreateWindowExW
+
+    g_torrent_engine = torrent_engine_create();
+    if(!g_torrent_engine)
+    {
+        DebugOut("WinMain: Failed to initialize libtorrent session.\n");
+    }
+    else
+    {
+        DebugOut("WinMain: libtorrent session initialized.\n");
+    }
 
 
     // --- Initialize Page Manager and Register Pages ---
@@ -184,6 +207,21 @@ int WINAPI WinMain(
     }
 
 
+    if(g_torrent_engine)
+    {
+        char engine_error[256] = { 0 };
+        int engine_status = torrent_engine_add_torrent_file(g_torrent_engine, "example.torrent", "downloads", engine_error, sizeof(engine_error));
+        if(engine_status != 0)
+        {
+            if(engine_error[0] == '\0')
+            {
+                strcpy_s(engine_error, sizeof(engine_error), "unknown error");
+            }
+            DebugOut("WinMain: torrent engine add failed (%s).\n", engine_error);
+        }
+    }
+
+
     // --- Main Message Loop ---
     DebugOut("WinMain: Entering message loop...\n");
     MSG msg = { 0 };
@@ -192,6 +230,10 @@ int WINAPI WinMain(
         // Optional: Add IsDialogMessage check here later if using modeless dialogs/tab key navigation
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
+        if(g_torrent_engine)
+        {
+            torrent_engine_drain_alerts(g_torrent_engine, LogTorrentAlert, NULL);
+        }
     }
     DebugOut("WinMain: Exited message loop (wParam=%d).\n", (int)msg.wParam);
     int loop_result = (int)msg.wParam;
@@ -212,6 +254,13 @@ int WINAPI WinMain(
 
     // Unregister window class
     UnregisterClassW(L"rawbit_window_class", hInstance);
+
+    if(g_torrent_engine)
+    {
+        torrent_engine_drain_alerts(g_torrent_engine, LogTorrentAlert, NULL);
+        torrent_engine_destroy(g_torrent_engine);
+        g_torrent_engine = NULL;
+    }
 
     CleanupDebugOutput(); // Clean up debugging resources
     return loop_result; // Return exit code from message loop (usually 0)

@@ -49,6 +49,12 @@
     <ClCompile Include="src\window.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\torrent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\torrent_engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\config.h">
@@ -67,6 +73,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\torrent_engine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

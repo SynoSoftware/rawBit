@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Third-party build outputs
+external/libtorrent-build/
+
+libtorrent/
+boost/
+
