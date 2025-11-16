@@ -78,7 +78,7 @@ typedef BOOL(WINAPI* SetWindowCompositionAttributeFn)(HWND, WindowCompositionAtt
         const MARGINS margins = { 0, 0, 0, 0 };
         DwmExtendFrameIntoClientArea(hwnd, &margins);
     }
-
+   
     void apply_mica(HWND hwnd)
     {
         if(!hwnd)
@@ -105,8 +105,8 @@ typedef BOOL(WINAPI* SetWindowCompositionAttributeFn)(HWND, WindowCompositionAtt
         BOOL trueValue = TRUE;
         DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &trueValue, sizeof(trueValue));
 
-    
      
+
     }
 
     void draw_open_button(const LauncherWindow* launcher, DRAWITEMSTRUCT* draw)
@@ -328,6 +328,11 @@ typedef BOOL(WINAPI* SetWindowCompositionAttributeFn)(HWND, WindowCompositionAtt
         update_secondary_text(launcher);
         update_fonts(launcher);
         apply_mica(hwnd);
+
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        layout_controls(launcher, rc);
+
 
         launcher->tray_menu = CreatePopupMenu();
         if(launcher->tray_menu)
@@ -574,13 +579,27 @@ int launcher_window_init(LauncherWindow* launcher, const LauncherWindowConfig* c
         return -3;
     }
 
+
+
+    // Remove the default caption and border styles
     LONG style = GetWindowLongW(hwnd, GWL_STYLE);
     style &= ~(WS_CAPTION | WS_THICKFRAME | WS_BORDER);
     SetWindowLongW(hwnd, GWL_STYLE, style);
 
+   
+    // Get the current extended style
     LONG exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
+
+    // Explicitly remove the layered style that conflicts with Mica
+    exStyle &= ~WS_EX_LAYERED;
+
+    // Also remove any default window edges
     exStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE | WS_EX_WINDOWEDGE);
+
+    // Apply the new, corrected extended style
     SetWindowLongW(hwnd, GWL_EXSTYLE, exStyle);
+
+ 
 
     SetWindowPos(hwnd, nullptr, 0,0,0,0,
         SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
